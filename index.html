@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html lang="bn">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ব্যক্তিগত খরচ ট্র্যাকার</title>
+    <link rel="stylesheet" href="style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <script type="module" src="https://unpkg.com/ionicons@7.1.0/dist/ionicons/ionicons.esm.js"></script>
+    <script nomodule src="https://unpkg.com/ionicons@7.1.0/dist/ionicons/ionicons.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- Google Identity Services -->
+    <script src="https://accounts.google.com/gsi/client" async defer></script>
+</head>
+<body>
+    <div class="background-blobs">
+        <div class="blob blob-1"></div>
+        <div class="blob blob-2"></div>
+        <div class="blob blob-3"></div>
+    </div>
+
+    <!-- Login Screen -->
+    <div id="login-screen" class="login-overlay">
+        <div class="glass-panel login-panel">
+            <h1>স্বাগতম</h1>
+            <p class="text-sm mb-2 text-center">অনুগ্রহ করে আপনার যৌথ অ্যাকাউন্টে প্রবেশ করতে সাইন-ইন করুন।</p>
+            <div id="g_id_onload"
+                 data-client_id="YOUR_GOOGLE_CLIENT_ID_HERE"
+                 data-callback="handleCredentialResponse"
+                 data-auto_prompt="false">
+            </div>
+            <div class="g_id_signin" data-type="standard" data-theme="filled_black" data-size="large"></div>
+            <!-- Fallback skip button for local testing -->
+            <button id="btn-skip-login" class="btn primary mt-1 w-100" style="margin-top:1rem;">এড়িয়ে যান (লোকাল টেস্টিং)</button>
+        </div>
+    </div>
+
+    <div class="container" id="app-container" style="display:none;">
+        <!-- Main Header & Navigation -->
+        <header class="main-header">
+            <div class="header-left">
+                <h1>হিসাব রক্ষক</h1>
+                <div class="month-picker-container">
+                    <input type="month" id="global-month-picker" class="month-picker">
+                </div>
+            </div>
+            <div class="header-right">
+                <nav class="tab-nav">
+                    <button class="tab-btn active" data-target="input-section"><ion-icon name="create-outline"></ion-icon> ইনপুট</button>
+                    <button class="tab-btn" data-target="dashboard-section"><ion-icon name="stats-chart-outline"></ion-icon> ড্যাশবোর্ড</button>
+                </nav>
+                <button id="btn-logout" class="btn danger-outline" title="লগআউট"><ion-icon name="log-out-outline"></ion-icon></button>
+            </div>
+        </header>
+
+        <!-- INPUT SECTION -->
+        <div id="input-section" class="tab-content active">
+            <div class="main-content">
+                <div class="left-column">
+                    <section class="glass-panel compact-panel mb-1">
+                        <h2><ion-icon name="add-circle-outline"></ion-icon> খরচ যোগ করুন</h2>
+                        <form id="expense-form">
+                            <div class="flex-row">
+                                <div class="input-group">
+                                    <label>তারিখ</label>
+                                    <input type="date" id="expense-date" required>
+                                </div>
+                                <div class="input-group">
+                                    <label>ক্যাটাগরি</label>
+                                    <select id="expense-category" required>
+                                        <option value="" disabled selected>ক্যাটাগরি নির্বাচন করুন</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="flex-row">
+                                <div class="input-group">
+                                    <label>পরিমাণ (টাকা)</label>
+                                    <input type="number" id="expense-amount" required>
+                                </div>
+                                <div class="input-group">
+                                    <label>বিবরণ</label>
+                                    <input type="text" id="expense-desc">
+                                </div>
+                            </div>
+                            <button type="submit" class="btn primary w-100">খরচ যোগ করুন</button>
+                        </form>
+                    </section>
+
+                    <section class="glass-panel compact-panel mb-1">
+                        <h2><ion-icon name="leaf-outline"></ion-icon> সঞ্চয় যোগ করুন</h2>
+                        <form id="savings-form" class="flex-row align-end">
+                            <div class="input-group">
+                                <label>তারিখ</label>
+                                <input type="date" id="savings-date" required>
+                            </div>
+                            <div class="input-group">
+                                <label>পরিমাণ (টাকা)</label>
+                                <input type="number" id="savings-amount" required>
+                            </div>
+                            <div class="input-group">
+                                <label>উৎস / মন্তব্য</label>
+                                <input type="text" id="savings-desc">
+                            </div>
+                            <button type="submit" class="btn success">সংরক্ষণ করুন</button>
+                        </form>
+                    </section>
+
+                    <section class="glass-panel compact-panel">
+                        <h2><ion-icon name="list-outline"></ion-icon> ক্যাটাগরি পরিচালনা</h2>
+                        <form id="category-form" class="flex-row">
+                            <input type="text" id="new-category-name" placeholder="নতুন ক্যাটাগরির নাম" required>
+                            <button type="submit" class="btn primary">যোগ করুন</button>
+                        </form>
+                    </section>
+                </div>
+
+                <div class="right-column">
+                    <section class="glass-panel list-section compact-panel mb-1">
+                        <h2>খরচের লগ (<span id="expense-month-label"></span>)</h2>
+                        <div class="list-container" id="expense-list"></div>
+                    </section>
+                    <section class="glass-panel list-section compact-panel">
+                        <h2>সঞ্চয়ের ইতিহাস (<span id="savings-month-label"></span>)</h2>
+                        <div class="list-container" id="savings-list"></div>
+                    </section>
+                </div>
+            </div>
+        </div>
+
+        <!-- DASHBOARD SECTION -->
+        <div id="dashboard-section" class="tab-content hidden">
+            <!-- Setup Form for Salary/Goal -->
+            <div class="glass-panel compact-panel mb-1">
+                <h2 style="margin-bottom:0.5rem; font-size:1.2rem;">মাসিক বাজেট সেটআপ (<span id="setup-month-label"></span>)</h2>
+                <div class="flex-row align-end flex-wrap">
+                    <div class="input-group">
+                        <label>মূল বেতন (টাকা)</label>
+                        <input type="number" id="input-salary" placeholder="পরিমাণ...">
+                    </div>
+                    <div class="input-group">
+                        <label>বোনাস / অতিরিক্ত আয়</label>
+                        <input type="number" id="input-bonus" placeholder="পরিমাণ...">
+                    </div>
+                    <div class="input-group">
+                        <label>সঞ্চয়ের লক্ষ্য</label>
+                        <input type="number" id="input-savings-goal" placeholder="লক্ষ্য...">
+                    </div>
+                    <button id="btn-update-budget" class="btn primary" style="margin-bottom:1rem;">বাজেট সংরক্ষণ করুন</button>
+                </div>
+            </div>
+
+            <!-- Summary Cards -->
+            <div class="summary-cards mb-1">
+                <div class="card">
+                    <div class="card-icon"><ion-icon name="wallet-outline"></ion-icon></div>
+                    <div class="card-content">
+                        <h3>মোট আয়</h3>
+                        <p id="total-income-display">৳ 0</p>
+                    </div>
+                </div>
+                <div class="card">
+                    <div class="card-icon"><ion-icon name="cash-outline"></ion-icon></div>
+                    <div class="card-content">
+                        <h3>মোট খরচ</h3>
+                        <p id="total-expense-display" class="text-red">৳ 0</p>
+                    </div>
+                </div>
+                <div class="card">
+                    <div class="card-icon"><ion-icon name="trending-up-outline"></ion-icon></div>
+                    <div class="card-content">
+                        <h3>মোট সঞ্চয়</h3>
+                        <p id="total-savings-display" class="text-green">৳ 0</p>
+                    </div>
+                </div>
+                <div class="card highlighted">
+                    <div class="card-icon"><ion-icon name="pie-chart-outline"></ion-icon></div>
+                    <div class="card-content">
+                        <h3>অবশিষ্ট ব্যালেন্স</h3>
+                        <p id="remaining-balance-display">৳ 0</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Monthly Charts -->
+            <div class="main-content mb-1">
+                <section class="glass-panel chart-section">
+                    <h2>মাসিক খরচের বিবরণ</h2>
+                    <div class="chart-container">
+                        <canvas id="expenseChart"></canvas>
+                    </div>
+                </section>
+                
+                <section class="glass-panel chart-section">
+                    <h2>মাসিক সঞ্চয়ের অগ্রগতি</h2>
+                    <div class="savings-progress mb-1">
+                        <div class="progress-bar-container">
+                            <div class="progress-bar" id="savings-progress-bar"></div>
+                        </div>
+                        <p class="text-sm">লক্ষ্য: <span id="savings-goal-display">৳ 0</span></p>
+                    </div>
+                    <div class="chart-container" style="height:180px;">
+                        <canvas id="savingsChart"></canvas>
+                    </div>
+                </section>
+            </div>
+
+            <!-- Yearly Overview -->
+            <section class="glass-panel">
+                <h2>বাৎসরিক ওভারভিউ (<span id="yearly-label"></span>)</h2>
+                <div class="chart-container" style="height: 300px;">
+                    <canvas id="yearlyChart"></canvas>
+                </div>
+            </section>
+        </div>
+    </div>
+    
+    <div id="loader" class="loader-overlay hidden">
+        <div class="spinner"></div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
