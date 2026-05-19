@@ -19,7 +19,6 @@ let yearlyChartInstance = null;
 const els = {
     loginScreen: document.getElementById('login-screen'),
     appContainer: document.getElementById('app-container'),
-    btnSkipLogin: document.getElementById('btn-skip-login'),
     btnLogout: document.getElementById('btn-logout'),
     globalMonthPicker: document.getElementById('global-month-picker'),
     
@@ -97,7 +96,6 @@ function logout() {
     els.loginScreen.classList.remove('hidden');
 }
 
-els.btnSkipLogin.addEventListener('click', () => login('local_user@test.com'));
 els.btnLogout.addEventListener('click', logout);
 
 // --- Initialization ---
