@@ -1,4 +1,4 @@
-const SCRIPT_URL = ''; // Provide GAS Web App URL here after deployment
+const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycby_lhXpD2xr6Iz2N361WCxIi3LKriDkGQZbTZMYOs5Ctfjkw7yAaJEE7_V-GSq7RoT63g/exec'; // Provide GAS Web App URL here after deployment
 
 // Define authorized emails here (Optional security layer)
 const AUTHORIZED_EMAILS = []; // Leave empty to allow any Google account, or add ['user1@gmail.com', 'user2@gmail.com']
